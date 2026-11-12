@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# PayRecon launcher: builds the project if needed, then runs the CLI.
+#   ./payrecon help
+set -euo pipefail
+cd "$(dirname "$0")"
+
+# Java 17 (Hadoop 3.3 + the code here use Java 17). On macOS, find it automatically.
+if [ -z "${JAVA_HOME:-}" ] && [ -x /usr/libexec/java_home ]; then
+  JAVA_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null || true)"
+fi
+JAVA="java"
+if [ -n "${JAVA_HOME:-}" ]; then
+  JAVA="$JAVA_HOME/bin/java"
+fi
+
+JAR="target/payrecon-1.0.0.jar"
+# Rebuild when the jar is missing or any source file is newer than it.
+if [ ! -f "$JAR" ] || [ -n "$(find src pom.xml -newer "$JAR" -print -quit 2>/dev/null)" ]; then
+  echo "Building PayRecon (mvn package) ..." >&2
+  mvn -q -DskipTests package >&2
+fi
+
+# Hadoop still uses reflection that Java 17 blocks by default; these flags allow it.
+OPENS=(
+  --add-opens java.base/java.lang=ALL-UNNAMED
+  --add-opens java.base/java.util=ALL-UNNAMED
+  --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+  --add-opens java.base/java.io=ALL-UNNAMED
+  --add-opens java.base/java.nio=ALL-UNNAMED
+  --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+  --add-opens java.base/java.net=ALL-UNNAMED
+  --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+  --add-opens java.base/java.security=ALL-UNNAMED
+)
+
+exec "$JAVA" -Xmx2g "${OPENS[@]}" -cp "$JAR:target/lib/*" com.payrecon.Main "$@"

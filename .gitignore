@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# build output
+target/
+
+# generated data (bank files, extracts, MapReduce output, Hive warehouse files)
+data/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Python environment for tools/make_pdfs.py
+.venv-docs/
+__pycache__/
